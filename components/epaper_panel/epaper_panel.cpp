@@ -80,15 +80,15 @@ esp_err_t EpaperPanel::Initialize()
     }
 
     if (previous_framebuffer_ == nullptr) {
-        // Same reasoning: this one is memcpy'd into the SPI buffer for the 0x26 plane on
-        // every partial, and memcmp'd against the live framebuffer.
-        previous_framebuffer_ =
-            static_cast<uint8_t*>(heap_caps_malloc(config_.buffer_len, MALLOC_CAP_INTERNAL |
-                                                                           MALLOC_CAP_8BIT));
+        // The retained image is read only in task context and is copied through
+        // the internal DMA staging buffer. Put it in PSRAM to leave 48 KB of
+        // internal RAM available for Wi-Fi and task stacks.
+        previous_framebuffer_ = static_cast<uint8_t*>(
+            heap_caps_malloc(config_.buffer_len, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT));
         if (previous_framebuffer_ == nullptr) {
-            ESP_LOGW(kTag, "Shadow framebuffer falling back to PSRAM");
+            ESP_LOGW(kTag, "PSRAM shadow framebuffer unavailable; using internal RAM");
             previous_framebuffer_ = static_cast<uint8_t*>(
-                heap_caps_malloc(config_.buffer_len, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT));
+                heap_caps_malloc(config_.buffer_len, MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT));
         }
         if (previous_framebuffer_ == nullptr) {
             ESP_LOGE(kTag, "Failed to allocate %d-byte retained framebuffer", config_.buffer_len);
@@ -108,6 +108,10 @@ esp_err_t EpaperPanel::Initialize()
         spi_tx_buffer_len_ = kSpiDmaChunkSizeBytes;
     }
 
+    ESP_LOGI(kTag, "Framebuffers ready: bytes_each=%d internal_free=%u internal_largest=%u",
+             config_.buffer_len,
+             static_cast<unsigned>(heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT)),
+             static_cast<unsigned>(heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT)));
     Clear(true);
     state_ = EpaperPanelState::kUninitialized;
     return ESP_OK;
