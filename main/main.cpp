@@ -1,6 +1,8 @@
 #include "app_shell.h"
+#include "device_console.h"
 
 #include "esp_err.h"
+#include "esp_log.h"
 #include "nvs_flash.h"
 
 extern "C" void app_main(void)
@@ -13,4 +15,8 @@ extern "C" void app_main(void)
     ESP_ERROR_CHECK(err);
 
     app_shell::Run();
+    const esp_err_t console_err = device_console::Init();
+    if (console_err != ESP_OK) {
+        ESP_LOGW("DeviceConsole", "USB diagnostics unavailable: %s", esp_err_to_name(console_err));
+    }
 }

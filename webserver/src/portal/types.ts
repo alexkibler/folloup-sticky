@@ -111,7 +111,7 @@ export interface SleepStatusResponse {
   light_sleep_trigger_minutes?: number;
 }
 
-export type ModuleId = 'core' | 'classic' | 'xiaozhi' | 'gemini' | 'openai';
+export type ModuleId = 'core' | 'classic' | 'xiaozhi' | 'localAi' | 'openai';
 
 export interface BootstrapResponse {
   success: boolean;
@@ -131,7 +131,11 @@ export interface ModuleRoutes {
   reset?: string;
 }
 
-export interface GeminiModuleSettings {
+export interface LocalAiModuleSettings {
+  transcription_url: string;
+  transcription_model: string;
+  ollama_url: string;
+  model_name: string;
   has_key?: boolean;
   last4?: string;
 }
@@ -184,10 +188,11 @@ export interface TalkingClockModuleResponse {
   settings?: TalkingClockModuleSettings;
 }
 
-export interface GeminiModuleResponse {
+export interface LocalAiModuleResponse {
+  runtime?: { ready: boolean; request_in_flight: boolean; last_status_message: string; last_error_message: string };
   success: boolean;
   message?: string;
-  settings?: GeminiModuleSettings;
+  settings?: LocalAiModuleSettings;
 }
 
 export interface OpenAiModuleResponse {

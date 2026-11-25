@@ -534,7 +534,7 @@ void SyncWorker(void*)
             }
         }
 
-        if (!SyncNow(nullptr, 2000)) {
+        if (!SyncNow(nullptr, 15000)) {
             ESP_LOGW(kTag, "Queued network time sync failed");
             Notify();
         }
@@ -992,7 +992,7 @@ Result ApplySettingsPatch(const SettingsPatch& patch)
 
     if (use_network_time) {
         // Queue the NTP sync on the dedicated sync worker rather than running the
-        // stack-heavy, ~2s-blocking SNTP path inline. ApplySettingsPatch is called from
+        // stack-heavy, blocking SNTP path inline. ApplySettingsPatch is called from
         // the caller's task (e.g. the 4 KB touch task when the user taps "Sync & Save"),
         // and running SNTP there overflowed its stack. The sync result arrives later via
         // the SNTP callback -> Notify -> event.

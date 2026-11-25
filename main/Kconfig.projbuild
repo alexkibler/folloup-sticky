@@ -52,13 +52,25 @@ menu "Folloup Settings"
             one step every interval, so it changes over time without being
             tied to the calendar.
 
-    config FOLLOWUP_GEMINI_API_KEY
-        string "Built-in Gemini API key"
+    config FOLLOWUP_TRANSCRIPTION_URL
+        string "Transcription endpoint (OpenAI-compatible)"
         default ""
-        help
-            Optional built-in Gemini API key used for testing. A runtime-saved
-            Gemini API key stored through the backend portal takes precedence
-            when present.
+
+    config FOLLOWUP_TRANSCRIPTION_MODEL
+        string "Transcription model"
+        default "parakeet-v3"
+
+    config FOLLOWUP_TRANSCRIPTION_API_KEY
+        string "Transcription bearer token"
+        default ""
+
+    config FOLLOWUP_OLLAMA_URL
+        string "Ollama base URL"
+        default ""
+
+    config FOLLOWUP_OLLAMA_MODEL
+        string "Ollama model"
+        default "llama3.1:8b-instruct-q4_K_M"
 
     config FOLLOWUP_AUTO_SLEEP_DISPLAY_SLEEP_TIMEOUT_SECONDS
         int "Display sleep timeout"

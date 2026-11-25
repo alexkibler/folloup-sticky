@@ -26,11 +26,16 @@ export interface PortalDom {
   passwordInput: ValidatableField;
   scanBtn: HTMLButtonElement;
   connectBtn: HTMLButtonElement;
-  // Gemini API key
-  geminiCard: CardField;
-  geminiApiKeyInput: ValidatableField & { readOnly: boolean };
-  geminiClearBtn: HTMLButtonElement;
-  geminiSaveBtn: HTMLButtonElement;
+  // LocalAi API key
+  transcriptionUrlInput: ValidatableField;
+  transcriptionModelInput: ValidatableField;
+  ollamaUrlInput: ValidatableField;
+  ollamaModelInput: ValidatableField;
+  localAiCard: CardField;
+  localAiApiKeyInput: ValidatableField & { readOnly: boolean };
+  localAiClearBtn: HTMLButtonElement;
+  localAiSaveBtn: HTMLButtonElement;
+  localAiTokenClearBtn: HTMLButtonElement;
   // Time / timezone
   timezoneLocationCard: CardField;
   timezoneSelect: ValidatableField;
@@ -53,12 +58,17 @@ export function createPortalDom(): PortalDom {
     scanBtn: getRequiredElement<HTMLButtonElement>('scanBtn'),
     connectBtn: getRequiredElement<HTMLButtonElement>('connectBtn'),
 
-    geminiCard: getRequiredElement<CardField>('geminiCard'),
-    geminiApiKeyInput: getRequiredElement<ValidatableField & { readOnly: boolean }>(
-      'geminiApiKeyInput'
+    transcriptionUrlInput: getRequiredElement<ValidatableField>('transcriptionUrlInput'),
+    transcriptionModelInput: getRequiredElement<ValidatableField>('transcriptionModelInput'),
+    ollamaUrlInput: getRequiredElement<ValidatableField>('ollamaUrlInput'),
+    ollamaModelInput: getRequiredElement<ValidatableField>('ollamaModelInput'),
+    localAiCard: getRequiredElement<CardField>('localAiCard'),
+    localAiApiKeyInput: getRequiredElement<ValidatableField & { readOnly: boolean }>(
+      'localAiApiKeyInput'
     ),
-    geminiClearBtn: getRequiredElement<HTMLButtonElement>('geminiClearBtn'),
-    geminiSaveBtn: getRequiredElement<HTMLButtonElement>('geminiSaveBtn'),
+    localAiClearBtn: getRequiredElement<HTMLButtonElement>('localAiClearBtn'),
+    localAiTokenClearBtn: getRequiredElement<HTMLButtonElement>('localAiTokenClearBtn'),
+    localAiSaveBtn: getRequiredElement<HTMLButtonElement>('localAiSaveBtn'),
 
     timezoneLocationCard: getRequiredElement<CardField>('timezoneLocationCard'),
     timezoneSelect: getRequiredElement<ValidatableField>('timezoneSelect'),

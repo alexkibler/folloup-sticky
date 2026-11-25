@@ -22,7 +22,7 @@
 | Display bus | SPI (`SPI3_HOST`), e-paper control signals |
 | Audio codec | ES8311 over I2S + shared I2C |
 | Audio amplifier | NS4150B (enabled via `GPIO39`) |
-| Board PCM format | `24 kHz`, mono, 16-bit |
+| Board PCM format | `16 kHz`, mono, 16-bit |
 | Storage expansion | MicroSD via `SDMMC 4-bit` mode |
 | Power management | AXP2101 PMIC (wiki labels it `TG28`) |
 | RTC | PCF85063 |
@@ -229,7 +229,7 @@ signals on this board and must keep a Boot-safe default level at reset:
 | IMU address | QMI8658 auto-detects: try `0x6B` first, fall back to `0x6A`. |
 | Strapping pins | `GPIO0/3/45/46` are strapping pins reused as functional signals — see [Strapping Pins](#7-strapping-pins). |
 | SD mode | `SDMMC 4-bit` (not SPI); all four data lines connected (`D0`–`D3`). |
-| Audio sample rate | Codec runs at `24 kHz` mono/16-bit; Gemini uplink path downsamples mic audio to `16 kHz` in software. |
+| Audio sample rate | Codec and local transcription use `16 kHz` mono/16-bit; no resampling is needed. |
 | PMIC naming | The Waveshare wiki lists the PMIC as `TG28`; the firmware driver targets an AXP2101-compatible PMIC at I2C `0x34` and that is what actually works. Treat `0x34` / AXP2101 as authoritative. |
 | SHTC3 sensor | Present on the board (shared I2C, `0x70`) but the current firmware ships no SHTC3 driver — add one before relying on temp/humidity. |
 | Connectors | Battery, speaker, and RTC-backup-battery use MX1.25 headers (per vendor wiki); USB-C is used for flashing/logging and native USB-OTG. |

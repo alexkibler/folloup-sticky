@@ -67,29 +67,15 @@
           </ui-button>
         </ui-bottom-sheet>
 
-        <ui-card id="geminiCard" title="Gemini API Key">
-            <ui-input
-              id="geminiApiKeyInput"
-              label="Gemini API Key"
-              placeholder="Enter Gemini API key"
-              autocomplete="off"
-              inputmode="text"
-            ></ui-input>
-
-            <ui-button
-              slot="footer"
-              id="geminiClearBtn"
-              variant="secondary"
-            >
-              Clear
-            </ui-button>
-            <ui-button
-              slot="footer"
-              id="geminiSaveBtn"
-              variant="primary"
-            >
-              Save
-            </ui-button>
+        <ui-card id="localAiCard" title="Local AI">
+          <ui-input id="transcriptionUrlInput" label="Transcription endpoint" placeholder="https://server/v1/audio/transcriptions" autocomplete="off"></ui-input>
+          <ui-input id="transcriptionModelInput" label="Transcription model" placeholder="parakeet-v3" autocomplete="off"></ui-input>
+          <ui-input id="localAiApiKeyInput" label="Diction pairing token (optional for other servers)" placeholder="Leave blank to keep the saved token" autocomplete="off" type="password"></ui-input>
+          <ui-input id="ollamaUrlInput" label="Ollama server" placeholder="http://your-mac.local:11434" autocomplete="off"></ui-input>
+          <ui-input id="ollamaModelInput" label="Ollama model" placeholder="llama3.1:8b-instruct-q4_K_M" autocomplete="off"></ui-input>
+          <ui-button slot="footer" id="localAiTokenClearBtn" variant="secondary">Clear token</ui-button>
+          <ui-button slot="footer" id="localAiClearBtn" variant="secondary">Check servers</ui-button>
+          <ui-button slot="footer" id="localAiSaveBtn" variant="primary">Save</ui-button>
         </ui-card>
 
         <ui-card id="timezoneLocationCard" title="Time Configuration">

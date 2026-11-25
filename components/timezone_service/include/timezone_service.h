@@ -78,7 +78,7 @@ Snapshot GetSnapshot();
 std::vector<TimezoneInfo> ListTimezones();
 void SetNetworkConnected(bool connected);
 Result ApplySettingsPatch(const SettingsPatch& patch);
-bool SyncNow(const char* ntp_server = nullptr, uint32_t timeout_ms = 2000);
+bool SyncNow(const char* ntp_server = nullptr, uint32_t timeout_ms = 15000);
 bool IsSyncInProgress();
 void RegisterPortalRoutes(httpd_handle_t server);
 

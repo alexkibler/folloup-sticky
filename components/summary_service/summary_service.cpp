@@ -18,7 +18,7 @@
 #include "freertos/queue.h"
 #include "freertos/task.h"
 #include "followup_task_config.h"
-#include "gemini_service.h"
+#include "local_ai_service.h"
 #include "recording_archive_service.h"
 #include "storage_service.h"
 
@@ -27,9 +27,9 @@ namespace {
 
 constexpr const char* kTag = "SummaryService";
 constexpr int kSummaryWindowDays = 3;
-constexpr int kSummaryInputTokenBudget = 120000;
-constexpr int kSummaryChunkTokenBudget = 60000;
-constexpr int kSummaryRollupTokenBudget = 120000;
+constexpr int kSummaryInputTokenBudget = 6000;
+constexpr int kSummaryChunkTokenBudget = 4000;
+constexpr int kSummaryRollupTokenBudget = 6000;
 constexpr int kMaxRollupDepth = 4;
 constexpr size_t kMinSplittableChars = 1024;
 constexpr UBaseType_t kSummaryQueueDepth = 4;
@@ -92,23 +92,17 @@ bool IsNotesRecordingTag(RecordingTag tag)
     return !IsTodoRecordingTag(tag);
 }
 
-size_t EstimateTokenCount(const std::string& text)
-{
-    return std::max<size_t>(1U, text.size() / 4U);
-}
-
-// --- gemini wrappers (synchronous; run on the worker task) -----------------
-
+// A UTF-8 byte is a conservative upper bound on byte-level model tokens.
+// Reserve context for the 1024-token output instead of using Gemini's 120K budget.
 size_t CountPromptTokens(const std::string& prompt)
 {
-    const gemini_service::TokenCountResult result = gemini_service::CountTokens(prompt);
-    return result.success ? static_cast<size_t>(result.total_tokens) : EstimateTokenCount(prompt);
+    return std::max<size_t>(1U, prompt.size());
 }
 
 bool GeneratePromptTextResult(const std::string& prompt, std::string* text_out,
                               std::string* error_code_out, std::string* error_message_out)
 {
-    const gemini_service::TextResult result = gemini_service::GenerateText(prompt);
+    const local_ai_service::TextResult result = local_ai_service::GenerateText(prompt);
     const std::string normalized = TrimCopy(result.text);
     if (!result.success || normalized.empty()) {
         if (error_code_out != nullptr) {
@@ -116,7 +110,7 @@ bool GeneratePromptTextResult(const std::string& prompt, std::string* text_out,
         }
         if (error_message_out != nullptr) {
             *error_message_out =
-                result.error_message.empty() ? "Gemini summary request failed" : result.error_message;
+                result.error_message.empty() ? "Local AI summary request failed" : result.error_message;
         }
         return false;
     }
@@ -697,7 +691,7 @@ std::vector<RecordingEntry> FilterWindowedEntries(const std::vector<RecordingEnt
 
 // Gather source entries from already-transcribed recordings. Audio-only recordings (no
 // transcript yet) are skipped and counted -- summarizing does NOT transcribe on the fly, since
-// that means one blocking Gemini round-trip per recording (slow, and prone to 503/timeout that
+// that means one blocking LocalAi round-trip per recording (slow, and prone to 503/timeout that
 // tanks the whole run). Recordings are transcribed at capture time; ideas via the Vibe Check star.
 std::vector<SourceEntry> CollectSourceEntries(SummaryKind kind,
                                               const std::vector<RecordingEntry>& entries,
@@ -799,18 +793,17 @@ GenerationResult GenerateSummary(SummaryKind kind)
 
     ESP_LOGI(kTag, "Generating %s summary", SummaryKindName(kind));
 
-    const gemini_service::Snapshot gemini_snapshot = gemini_service::GetSnapshot();
-    if (!gemini_snapshot.runtime.ready) {
-        result.error_code = "gemini_not_ready";
-        result.error_message = "Gemini is not connected";
-        ESP_LOGW(kTag, "Summary aborted: Gemini not connected");
+    const local_ai_service::Snapshot local_ai_snapshot = local_ai_service::GetSnapshot();
+    if (!local_ai_snapshot.runtime.text_ready) {
+        result.error_code = "local_ai_not_ready";
+        result.error_message = "Local AI is not connected";
+        ESP_LOGW(kTag, "Summary aborted: Local AI not connected");
         return result;
     }
-    if (gemini_service::GetEffectiveApiKey().empty() ||
-        gemini_service::GetEffectiveModelName().empty()) {
-        result.error_code = "gemini_not_configured";
-        result.error_message = "Gemini is not configured";
-        ESP_LOGW(kTag, "Summary aborted: Gemini not configured");
+    if (!local_ai_snapshot.settings.configured) {
+        result.error_code = "local_ai_not_configured";
+        result.error_message = "Local AI is not configured";
+        ESP_LOGW(kTag, "Summary aborted: Local AI not configured");
         return result;
     }
 
@@ -979,7 +972,7 @@ esp_err_t Init()
                 return ESP_ERR_NO_MEM;
             }
             if (xTaskCreatePinnedToCore(WorkerTask, "summary_service", kWorkerTaskStackWords, nullptr,
-                                        followup_task_config::kPriorityGemini, nullptr,
+                                        followup_task_config::kPriorityLocalAi, nullptr,
                                         followup_task_config::kSystemCore) != pdPASS) {
                 ESP_LOGE(kTag, "Failed to start summary worker");
                 vQueueDelete(s_queue);

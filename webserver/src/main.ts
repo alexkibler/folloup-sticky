@@ -24,7 +24,7 @@ import apiKeyIcon from './assets/api_key.svg?raw';
 import checkIcon from './assets/check.svg?raw';
 import clockIcon from './assets/clock.svg?raw';
 import {
-  fetchGeminiModuleJson,
+  fetchLocalAiModuleJson,
   fetchPortalJson,
   fetchTimeRuntimeJson,
   fetchTimeSettingsJson,
@@ -56,13 +56,12 @@ import {
   svgWithClass,
 } from './portal/uiHelpers';
 import { parseClockTimeInputValue } from './portal/duration';
-import { createProviderKeysController } from './portal/providerKeys';
+import { createLocalAiController } from './portal/localAi';
 import { createTimeController } from './portal/time';
 import { createWiFiController } from './portal/wifi';
 import { bindPortalEvents } from './portal/events';
 import { updatePortalUiState } from './portal/uiState';
 import type {
-  OpenAiModuleResponse,
   TalkingClockModuleResponse,
   ValidatableField,
 } from './portal/types';
@@ -82,7 +81,7 @@ let pageFade: ReturnType<typeof createGradualBlur> | null = null;
 const dom = createPortalDom();
 
 const setNotification = createLiveRegionNotifier(dom.wifiSettingsNotification);
-const setGeminiNotification = createCardNotifier(dom.geminiCard);
+const setLocalAiNotification = createCardNotifier(dom.localAiCard);
 const setTimezoneLocationNotification = createCardNotifier(dom.timezoneLocationCard);
 
 // Detached stand-ins for the byte90-only "talking clock" time controls, which Followup does not
@@ -92,14 +91,10 @@ const noopTimeInput = () => document.createElement('input') as unknown as Valida
 const stubClockModeToggle = document.createElement('button');
 const stubWakeupTimeInput = noopTimeInput();
 const stubBedtimeTimeInput = noopTimeInput();
-const stubOpenAiApiKeyInput = document.createElement('input') as unknown as ValidatableField & {
-  readOnly: boolean;
-};
-
 function updateUi() {
   updatePortalUiState({
     controllers: {
-      geminiController,
+      localAiController,
       timeController,
       wifiController,
     },
@@ -107,16 +102,11 @@ function updateUi() {
   });
 }
 
-const geminiController = createProviderKeysController({
-  fetchGeminiModuleJson,
-  fetchOpenAiModuleJson: () => Promise.resolve({} as OpenAiModuleResponse),
-  geminiApiKeyInput: dom.geminiApiKeyInput,
-  isGeminiModuleActive: () => true,
-  isOpenAiModuleActive: () => false,
-  notifyGemini: setGeminiNotification,
-  notifyOpenAi: () => {},
-  openAiApiKeyInput: stubOpenAiApiKeyInput,
-  updateButtons: updateUi,
+const localAiController = createLocalAiController({
+  dom,
+  fetchJson: fetchLocalAiModuleJson,
+  notify: setLocalAiNotification,
+  updateUi,
 });
 
 const timeController = createTimeController({
@@ -198,7 +188,7 @@ function updatePageFade() {
 function initialize() {
   setIcon(dom.followupLogoEl, followupLogo, 'followup-logo');
   dom.wifiStatusCard.iconSvg = wifiIcon;
-  dom.geminiCard.iconSvg = apiKeyIcon;
+  dom.localAiCard.iconSvg = apiKeyIcon;
   dom.timezoneLocationCard.iconSvg = clockIcon;
 
   wifiController.renderNetworkList();
@@ -236,7 +226,7 @@ function initialize() {
 
   bindPortalEvents({
     controllers: {
-      geminiController,
+      localAiController,
       timeController,
       wifiController,
     },
@@ -261,16 +251,16 @@ async function loadInitialStatus() {
     timeController.populateTimezoneOptions(),
     timeController.fetchTimeSettingsStatus(),
     wifiController.checkStatus(),
-    loadGeminiSettings(),
+    loadLocalAiSettings(),
   ]);
 }
 
-async function loadGeminiSettings() {
+async function loadLocalAiSettings() {
   try {
-    const data = await fetchGeminiModuleJson('/api/settings/gemini');
-    geminiController.applyGeminiSettings(data.settings);
+    const data = await fetchLocalAiModuleJson('/api/settings/ai');
+    localAiController.applySettings(data.settings);
   } catch (error) {
-    console.error('Gemini settings status failed:', error);
+    console.error('LocalAi settings status failed:', error);
   } finally {
     updateUi();
   }

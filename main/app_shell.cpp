@@ -21,7 +21,7 @@
 #include "followup_task_config.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
-#include "gemini_service.h"
+#include "local_ai_service.h"
 #include "imu_service.h"
 #include "input_focus_runtime.h"
 #include "input_runtime_setup.h"
@@ -70,7 +70,7 @@ constexpr TickType_t kPowerButtonReleaseSettleDelay = pdMS_TO_TICKS(500);
 
 TaskHandle_t s_shutdown_task = nullptr;
 std::atomic<bool> s_startup_complete = false;
-std::atomic<bool> s_gemini_ready = false;
+std::atomic<bool> s_local_ai_ready = false;
 std::mutex s_recording_session_feedback_mutex;
 recording_session_service::Phase s_last_recording_session_feedback_phase =
     recording_session_service::Phase::kIdle;
@@ -919,7 +919,7 @@ void HandleRecordingSessionEvent(const recording_session_service::Event& event, 
                 // itself is still on SD) with a specific message for a quota/rate-limit error.
                 const bool quota_exceeded =
                     event.snapshot.last_error_code == "RESOURCE_EXHAUSTED";
-                toast = BuildToast(quota_exceeded ? "Gemini quota exceeded" : "Transcription failed",
+                toast = BuildToast(quota_exceeded ? "Local AI quota exceeded" : "Transcription failed",
                                    EmbeddedIconId::kClose);
             } else if (event.snapshot.clip_saved) {
                 toast = BuildToast("Recording saved to SD", EmbeddedIconId::kCheck);
@@ -1154,30 +1154,23 @@ void HandleTimezoneEvent(const timezone_service::Event& event, void*)
 void RegisterWifiBackendRoutes(httpd_handle_t server, void*)
 {
     timezone_service::RegisterPortalRoutes(server);
-    gemini_service::RegisterPortalRoutes(server);
+    local_ai_service::RegisterPortalRoutes(server);
 }
 
-void HandleGeminiEvent(const gemini_service::Event& event, void*)
+void HandleLocalAiEvent(const local_ai_service::Event& event, void*)
 {
     ESP_LOGI(kTag,
-             "Gemini intent: configured=%d source=%s ready=%d auth_checked=%d in_flight=%d http=%d status=%s error=%s",
-             event.snapshot.settings.configured ? 1 : 0,
-             gemini_service::ApiKeySourceName(event.snapshot.settings.api_key_source),
-             event.snapshot.runtime.ready ? 1 : 0,
-             event.snapshot.runtime.auth_checked ? 1 : 0,
-             event.snapshot.runtime.request_in_flight ? 1 : 0,
-             event.snapshot.runtime.last_http_status,
-             event.snapshot.runtime.last_status_message.empty()
-                 ? "<none>"
-                 : event.snapshot.runtime.last_status_message.c_str(),
-             event.snapshot.runtime.last_error_code.empty()
-                 ? "<none>"
-                 : event.snapshot.runtime.last_error_code.c_str());
+             "Local AI: configured=%d transcription=%d text=%d status=%s error=%s",
+             event.snapshot.settings.configured,
+             event.snapshot.runtime.transcription_ready,
+             event.snapshot.runtime.text_ready,
+             event.snapshot.runtime.last_status_message.c_str(),
+             event.snapshot.runtime.last_error_code.c_str());
 
     const bool ready = event.snapshot.runtime.ready;
-    const bool was_ready = s_gemini_ready.exchange(ready, std::memory_order_relaxed);
+    const bool was_ready = s_local_ai_ready.exchange(ready, std::memory_order_relaxed);
     if (ready && !was_ready) {
-        PlayFeedback(feedback_service::FeedbackEvent::kGeminiConnected);
+        PlayFeedback(feedback_service::FeedbackEvent::kLocalAiConnected);
     }
 
     const esp_err_t status_bar_err =
@@ -1186,7 +1179,7 @@ void HandleGeminiEvent(const gemini_service::Event& event, void*)
                   display_service::RefreshMode::kPartial)
             : status_bar_runtime::UpdateDisplayState();
     if (status_bar_err != ESP_OK && status_bar_err != ESP_ERR_INVALID_STATE) {
-        ESP_LOGW(kTag, "Status bar update after Gemini event failed: %s",
+        ESP_LOGW(kTag, "Status bar update after Local AI event failed: %s",
                  esp_err_to_name(status_bar_err));
     }
 }
@@ -1206,7 +1199,7 @@ void HandleWifiEvent(const wifi_service::Event& event, void*)
              event.ui_state.ap_url.empty() ? "<none>" : event.ui_state.ap_url.c_str(),
              event.ui_state.rssi);
     timezone_service::SetNetworkConnected(event.ui_state.connected);
-    gemini_service::SetNetworkState(event.ui_state.connected,
+    local_ai_service::SetNetworkState(event.ui_state.connected,
                                     event.ui_state.access_point_mode);
 
     // Region scope, not screen scope. Wi-Fi events fire during and right after the page
@@ -1598,12 +1591,12 @@ void InitRecordingArchiveService()
     recording_archive_service::Init();
 }
 
-void InitGeminiService()
+void InitLocalAiService()
 {
-    gemini_service::SetEventHandler(HandleGeminiEvent, nullptr);
-    const esp_err_t err = gemini_service::Init();
+    local_ai_service::SetEventHandler(HandleLocalAiEvent, nullptr);
+    const esp_err_t err = local_ai_service::Init();
     if (err != ESP_OK) {
-        ESP_LOGW(kTag, "Gemini service init failed: %s", esp_err_to_name(err));
+        ESP_LOGW(kTag, "Local AI service init failed: %s", esp_err_to_name(err));
     }
 }
 
@@ -1747,7 +1740,7 @@ void Run()
     InitDeviceSleepRuntime();
     InitTimezoneService();
     InitRecordingArchiveService();
-    InitGeminiService();
+    InitLocalAiService();
     InitWifiService();
     InitRecordingService();
     InitTranscriptionService();
