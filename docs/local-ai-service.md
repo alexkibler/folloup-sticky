@@ -68,6 +68,9 @@ The USB Serial/JTAG console provides `help`, `status`, `ai-check`, `ai-test`,
 `capture-test`, `wifi-join`, `sd-format` and `log`. `ai-test` sends a short Ollama
 prompt. `capture-test` records five seconds, saves the clip, transcribes it and
 saves its transcript in the archive. It should be run only when no user recording
-is active. `sd-format ERASE` explicitly erases the mounted SD filesystem; it does
-not repartition a card. Entering USB mass-storage mode temporarily disconnects
+is active. `sd-format ERASE` and Settings → Format SD erase the SD card. In this ESP-IDF
+5.5.4 build, FatFs uses physical-drive auto partition mapping, so formatting
+creates a new full-card FAT32 partition, replacing any previous partition layout.
+Recordings, transcripts, summaries and other SD files are lost; firmware and
+Wi-Fi/AI settings in internal flash remain intact. Entering USB mass-storage mode temporarily disconnects
 the serial console because both modes share the board's USB connection.
